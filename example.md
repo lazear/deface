@@ -1,0 +1,44 @@
+<head><link rel="stylesheet" type="text/css" href="style.css"></head>
+
+# This is a first level header
+## Second
+### Third
+#### Fourth
+##### Fifth
+
+- This is an unordered list
+- which must be across 
+- consecutive lines
+1. ~This is a numbered list~
+120. *(a.k.a an ordered list)*
+
+Lines starting with < are included as-is, allowing HTML or CSS attributes to be embedded inline
+while
+> Lines starting with > are ~blockquotes~,
+> like what you would see in an email.
+> - author
+
+`{This creates an anchor point}`, and 
+`[This is how you create a link](#anchor)`
+
+Sentences without an empty line
+will be grouped into a paragraph
+Although you can add a line break by ending a line
+with two spaces  
+like this
+
+{paragraph}This is a separate paragraph which has a [self-referential link](#paragraph)
+backticks escape what they contain `[`, as do backslashes "\\"
+
+*`*asterisks*`* make things *bold!*
+
+~`~tilde's~`~ make things ~italic~
+
+`_underscores_` _underline_
+
+`===` makes a horizontal rule
+
+===
+
+end
+</body>
