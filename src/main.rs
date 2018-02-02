@@ -107,9 +107,8 @@ impl<'a> Lexer<'a> {
         }     
     }
 
-    fn transform(&mut self) -> Result<String, Error> {
+    fn transform(&mut self, mut escaped: bool) -> Result<String, Error> {
         let mut out = String::new();
-        let mut escaped = false;
 
         while let Some(c) = self.next_char() {
             if escaped {
@@ -235,7 +234,7 @@ impl<'a> Lexer<'a> {
                             Some(s) => s.len(),
                             None => 1,
                         };
-                        let content = self.transform()?;                        
+                        let content = self.transform(false)?;                        
                         self.emit(&format!("<h{}>{}</h{}>", depth, content, depth));
                     },
                     '-' => {
@@ -245,7 +244,7 @@ impl<'a> Lexer<'a> {
                         } 
                         self.expect_char('-')?;
                         self.consume_while_char(char::is_whitespace);
-                        let content = self.transform()?;
+                        let content = self.transform(false)?;
                         self.emit(&format!("<li>{}</li>", content));
 
                         // Is the next line also a list?
@@ -259,13 +258,17 @@ impl<'a> Lexer<'a> {
                         } 
                     },
                     '>' => {
+                        if paragraph == false {
+                            self.emit("<p>");
+                        }
+                        paragraph = true;
                         if !in_block {
-                            self.emit("<pre><code>");
+                            self.emit("<blockquote>");
                             in_block = true;
                         }
                         self.expect_char('>')?;           
                         self.consume_while_char(char::is_whitespace);             
-                        let content = self.transform()?;
+                        let content = self.transform(false)?;
                         self.emit(&content);
                         if let Some(next) = self.peek_line() {
                             if !next.starts_with(">") {
@@ -273,9 +276,43 @@ impl<'a> Lexer<'a> {
                             }
                         }
                         if !in_block {
-                            self.emit("</pre></code>");
+                            self.emit("</blockquote>");
                         }
 
+                    },
+                    '`' => {
+                        if paragraph == false {
+                            self.emit("<p>");
+                        }
+                        paragraph = true;
+                        let mut buffer = String::new();
+                        while let Some(c) = self.peek_char() {
+                            if c == '`' {
+                                buffer.push(c);
+                                self.next_char();
+                            } else {
+                                break;
+                            }
+                        }
+                        if buffer.len() == 3 {
+                            let mut v: Vec<String> = Vec::new();
+                            
+                            while let Some(line) = self.next_line() {
+                                if line == "```" {
+                                        break;
+                                } else {
+                                    v.push(line.into());
+                                }
+                            }
+                            self.emit("<pre><code>");
+                            for l in v {
+                                self.emit(&l);
+                            }
+                            self.emit("</pre></code>");
+                        } else {
+                            let s = self.transform(true)?;
+                            self.emit(&s);
+                        }
                     }
                     _ => {
                         if paragraph == false {
@@ -289,7 +326,7 @@ impl<'a> Lexer<'a> {
                             } 
                             self.consume_while_char(|c| c.is_digit(10));
                             self.expect_char('.')?;
-                            let content = self.transform()?;
+                            let content = self.transform(false)?;
                             self.emit(&format!("<li>{}</li>", content));
                             // Is the next line also a list?
                             if let Some(next) = self.peek_line() {
@@ -301,7 +338,7 @@ impl<'a> Lexer<'a> {
                                 self.emit("</ol>");
                             } 
                         }
-                        let s = self.transform()?;
+                        let s = self.transform(false)?;
                         self.emit(&s);
                     },
 
@@ -341,7 +378,7 @@ fn main() {
             return;
         },
         2 => {
-            let x = args.nth(1).expect("impossible error");
+            let x = args.nth(1).expect("impossible!");
             (x.clone(), x.replace("md", "html"))      
         },
         3 | _=> {
@@ -349,7 +386,6 @@ fn main() {
         },
     };
 
-    println!("{:?}, {:?}", input, output);
     match convert(&input, &output) {
         Ok(_) => println!("Conversion successful, wrote HTML to {}", output),
         Err(e) => println!("{}", e.message),

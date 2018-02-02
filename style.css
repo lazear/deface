@@ -3,9 +3,15 @@ body {
     text-align: left;
     font-size: 16px;
     margin: 5%;
+    margin-top: 20px;
 }
 
 code {
     font-family: monospace;
-    background-color: #80808030;
+    background-color: #80808020;
+}
+
+blockquote {
+    border-left: 4px solid #CCC;
+    padding-left: 8px;
 }

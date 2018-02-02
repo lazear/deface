@@ -14,9 +14,16 @@
 
 Lines starting with < are included as-is, allowing HTML or CSS attributes to be embedded inline
 while
-> Lines starting with > are ~blockquotes~,
-> like what you would see in an email.
+> Lines starting with > are ~blockquotes~,  
+> like what you would see in an email.  
 > - author
+
+code block's are delimited by 3 back ticks
+```
+let x = 10;
+let q = 20;
+let z = x * q;
+```
 
 `{This creates an anchor point}`, and 
 `[This is how you create a link](#anchor)`
@@ -34,11 +41,8 @@ backticks escape what they contain `[`, as do backslashes "\\"
 
 ~`~tilde's~`~ make things ~italic~
 
-`_underscores_` _underline_
+`_underscores_` _underline_  
 
-`===` makes a horizontal rule
+`===` makes a horizontal rule  
 
-===
 
-end
-</body>
