@@ -371,24 +371,26 @@ fn convert(input: &str, output: &str) -> Result<(), Error> {
 
 fn main() {
     let mut args = std::env::args();
-    let (input, output) = match args.len() {
+    match args.len() {
         1 => {
-            println!("usage: {} <input file> [output file]", args.nth(0).unwrap());
-            println!("If no output file is designated conversion will be output to s/.md/.html/");
+            println!("usage: {} <input file> <input file 2> ...", args.nth(0).unwrap());
+            println!("Markdown files will be converted to HTML");
             return;
         },
-        2 => {
-            let x = args.nth(1).expect("impossible!");
-            (x.clone(), x.replace("md", "html"))      
-        },
-        3 | _=> {
-            (args.nth(1).expect("impossible!"), args.nth(0).expect("impossible!"))
-        },
+        _ => {
+            for v in args.skip(1) {
+                if v.contains(".md") {
+                    let input = v.clone();
+                    let output = v.replace(".md", ".html");
+                    match convert(&input, &output) {
+                        Ok(_) => println!("Success: {} => {}", input, output),
+                        Err(e) => println!("Failure: {} => {}: {}", input, output, e.message),
+                    };
+                }
+            }
+        }
     };
 
-    match convert(&input, &output) {
-        Ok(_) => println!("Conversion successful, wrote HTML to {}", output),
-        Err(e) => println!("{}", e.message),
-    };
+
     
 }

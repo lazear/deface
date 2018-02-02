@@ -13,7 +13,11 @@ cargo run --release example.md
 
 Command line arguments:
 ```
-deface <input file> [output file]
+deface <input file> ...
 ```
 
-Input file is a markup file (default extension ".md"). If no output file is provided, 's/md/html/g' will be used to create an output file
+Input file is a markup file (default extension ".md"), and will be translated into an HTML file.
+Multiple input files can be provided, like so
+```
+deface README.md index.md resume.md about.md
+```
