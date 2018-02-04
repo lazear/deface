@@ -370,7 +370,7 @@ fn convert(input: &str, output: &str) -> Result<(), Error> {
 }
 
 fn main() {
-    let mut args = std::env::args();
+    let mut args = env::args();
     match args.len() {
         1 => {
             println!("usage: {} <input file> <input file 2> ...", args.nth(0).unwrap());
