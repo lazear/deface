@@ -6,6 +6,8 @@ repository = "https://github.com/lazear/deface.git"
 homepage = "https://github.com/lazear/deface"
 license = "MIT"
 readme = "README.md"
+description = "Lightweight markup to HTML converter"
+keywords = ["markdown", "markup"]
 
 [profile.release]
 lto = true
