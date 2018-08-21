@@ -1,9 +1,8 @@
-use std::str;
 use std::env;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::iter::Peekable;
-
+use std::str;
 
 pub struct Lexer<'a> {
     remaining: Peekable<str::Lines<'a>>,
@@ -34,7 +33,7 @@ impl<'a> Lexer<'a> {
 
     fn peek_char(&mut self) -> Option<char> {
         match self.current_line {
-            Some(ref mut c) => c.peek().map(|x| *x),
+            Some(ref mut c) => c.peek().cloned(),
             None => None,
         }
     }
@@ -46,28 +45,23 @@ impl<'a> Lexer<'a> {
     // Returns the next line in the iterator
     fn next_line(&mut self) -> Option<String> {
         let next = self.remaining.next();
-        match next {
-            Some(s) => { 
-                self.line += 1;
-                self.col = 0;
-                self.current_line = Some(s.chars().peekable());
-            },
-            None => (),
+        if let Some(line) = next {
+            self.line += 1;
+            self.col = 0;
+            self.current_line = Some(line.chars().peekable());
         }
         next.map(|s| s.into())
     }
 
-        // Returns the next line in the iterator
+    // Returns the next line in the iterator
     fn next_char(&mut self) -> Option<char> {
         match self.current_line {
-            Some(ref mut iter) => {
-                match iter.next() {
-                    Some(c) => {
-                        self.col += 1;
-                        Some(c)
-                    },
-                    None => None,
-                }                
+            Some(ref mut iter) => match iter.next() {
+                Some(c) => {
+                    self.col += 1;
+                    Some(c)
+                }
+                None => None,
             },
             None => None,
         }
@@ -76,7 +70,7 @@ impl<'a> Lexer<'a> {
     fn consume_while_char<F: Fn(char) -> bool>(&mut self, lambda: F) -> Option<String> {
         let mut s = String::new();
         let mut escape = false;
-        while let Some(c) = self.peek_char(){
+        while let Some(c) = self.peek_char() {
             // Don't escape backticks if that's what we're trying to parse out!
             if c == '`' && lambda('`') {
                 escape = !escape;
@@ -89,14 +83,23 @@ impl<'a> Lexer<'a> {
                 return Some(s);
             }
         }
-        if s == "" { None } else { Some(s) } 
+        if s == "" {
+            None
+        } else {
+            Some(s)
+        }
     }
 
     fn expect_char(&mut self, c: char) -> Result<(), Error> {
         if self.next_char() == Some(c) {
             Ok(())
         } else {
-            Err(Error{message: format!("Expecting character {}, on line {} column {}", c, self.line, self.col)})
+            Err(Error {
+                message: format!(
+                    "Expecting character {}, on line {} column {}",
+                    c, self.line, self.col
+                ),
+            })
         }
     }
 
@@ -104,7 +107,7 @@ impl<'a> Lexer<'a> {
         if s != "" {
             self.output.push_str(s);
             self.output.push('\n');
-        }     
+        }
     }
 
     fn transform(&mut self, mut escaped: bool) -> Result<String, Error> {
@@ -126,7 +129,7 @@ impl<'a> Lexer<'a> {
                                 out.push_str(&text);
                             }
                         }
-                    },
+                    }
                     '[' => {
                         // Parse out link
                         if let Some(linktext) = self.consume_while_char(|c| c != ']') {
@@ -137,7 +140,7 @@ impl<'a> Lexer<'a> {
                                 out.push_str(&format!(r#"<a href="{}">{}</a>"#, target, linktext));
                             }
                         }
-                    },
+                    }
                     '*' => {
                         if let Some(peek) = self.peek_char() {
                             if peek.is_whitespace() {
@@ -149,8 +152,7 @@ impl<'a> Lexer<'a> {
                                 self.expect_char('*')?;
                             }
                         }
-
-                    },
+                    }
                     '~' => {
                         if let Some(peek) = self.peek_char() {
                             if peek.is_whitespace() {
@@ -162,8 +164,7 @@ impl<'a> Lexer<'a> {
                                 self.expect_char('~')?;
                             }
                         }
-
-                    },
+                    }
                     '_' => {
                         if let Some(peek) = self.peek_char() {
                             if peek.is_whitespace() {
@@ -175,20 +176,19 @@ impl<'a> Lexer<'a> {
                                 self.expect_char('_')?;
                             }
                         }
-
-                    },
+                    }
                     '{' => {
                         if let Some(anchor) = self.consume_while_char(|c| c != '}') {
                             self.expect_char('}')?;
                             out.push_str(&format!(r#"<a name="{}"></a>"#, anchor))
                         }
-                    },
+                    }
                     '\\' => {
                         if let Some(c) = self.next_char() {
                             out.push(c);
                         }
-                    },
-                    '=' => {                        
+                    }
+                    '=' => {
                         if let Some(hr) = self.consume_while_char(|c| c == '=') {
                             if hr.len() >= 2 {
                                 out.push_str("<hr>");
@@ -198,11 +198,10 @@ impl<'a> Lexer<'a> {
                         } else {
                             out.push(c);
                         }
-                    },
+                    }
                     _ => {
                         out.push(c);
                     }
-                    
                 }
             }
         }
@@ -212,36 +211,36 @@ impl<'a> Lexer<'a> {
             out.pop().unwrap();
             out.push_str("<br />");
         }
-        Ok(out)        
+        Ok(out)
     }
 
     fn parse(&mut self) -> Result<(), Error> {
-        let mut in_list   = false;
-        let mut in_block  = false;
+        let mut in_list = false;
+        let mut in_block = false;
         let mut paragraph = true;
         self.emit("<!DOCTYPE html>");
         self.emit("<html>");
         while let Some(_) = self.next_line() {
             if let Some(s) = self.peek_char() {
-                match s{
+                match s {
                     '<' => {
                         if let Some(html) = self.consume_while_char(|_| true) {
                             self.emit(&html);
-                        }                        
+                        }
                     }
                     '#' => {
                         let depth = match self.consume_while_char(|c| c == '#') {
                             Some(s) => s.len(),
                             None => 1,
                         };
-                        let content = self.transform(false)?;                        
+                        let content = self.transform(false)?;
                         self.emit(&format!("<h{}>{}</h{}>", depth, content, depth));
-                    },
+                    }
                     '-' => {
                         if !in_list {
                             self.emit("<ul>");
                             in_list = true;
-                        } 
+                        }
                         self.expect_char('-')?;
                         self.consume_while_char(char::is_whitespace);
                         let content = self.transform(false)?;
@@ -249,16 +248,16 @@ impl<'a> Lexer<'a> {
 
                         // Is the next line also a list?
                         if let Some(next) = self.peek_line() {
-                            if !next.starts_with("-") {
+                            if !next.starts_with('-') {
                                 in_list = false;
                             }
                         }
                         if !in_list {
                             self.emit("</ul>\n");
-                        } 
-                    },
+                        }
+                    }
                     '>' => {
-                        if paragraph == false {
+                        if !paragraph {
                             self.emit("<p>");
                         }
                         paragraph = true;
@@ -266,22 +265,21 @@ impl<'a> Lexer<'a> {
                             self.emit("<blockquote>");
                             in_block = true;
                         }
-                        self.expect_char('>')?;           
-                        self.consume_while_char(char::is_whitespace);             
+                        self.expect_char('>')?;
+                        self.consume_while_char(char::is_whitespace);
                         let content = self.transform(false)?;
                         self.emit(&content);
                         if let Some(next) = self.peek_line() {
-                            if !next.starts_with(">") {
+                            if !next.starts_with('>') {
                                 in_block = false;
                             }
                         }
                         if !in_block {
                             self.emit("</blockquote>");
                         }
-
-                    },
+                    }
                     '`' => {
-                        if paragraph == false {
+                        if !paragraph {
                             self.emit("<p>");
                         }
                         paragraph = true;
@@ -296,12 +294,12 @@ impl<'a> Lexer<'a> {
                         }
                         if buffer.len() == 3 {
                             let mut v: Vec<String> = Vec::new();
-                            
+
                             while let Some(line) = self.next_line() {
                                 if line == "```" {
-                                        break;
+                                    break;
                                 } else {
-                                    v.push(line.into());
+                                    v.push(line);
                                 }
                             }
                             self.emit("<pre><code>");
@@ -315,7 +313,7 @@ impl<'a> Lexer<'a> {
                         }
                     }
                     _ => {
-                        if paragraph == false {
+                        if !paragraph {
                             self.emit("<p>");
                         }
                         paragraph = true;
@@ -323,7 +321,7 @@ impl<'a> Lexer<'a> {
                             if !in_list {
                                 self.emit("<ol>");
                                 in_list = true;
-                            } 
+                            }
                             self.consume_while_char(|c| c.is_digit(10));
                             self.expect_char('.')?;
                             let content = self.transform(false)?;
@@ -336,20 +334,19 @@ impl<'a> Lexer<'a> {
                             }
                             if !in_list {
                                 self.emit("</ol>");
-                            } 
+                            }
                         }
                         let s = self.transform(false)?;
                         self.emit(&s);
-                    },
-
+                    }
                 }
             } else {
-                if paragraph == true {
+                if paragraph {
                     self.emit("</p>");
                 }
                 paragraph = false;
             }
-        } 
+        }
         self.emit("</html>");
         Ok(())
     }
@@ -359,13 +356,24 @@ fn convert(input: &str, output: &str) -> Result<(), Error> {
     match (File::open(input), File::create(output)) {
         (Ok(mut f), Ok(mut out)) => {
             let mut buffer = String::new();
-            f.read_to_string(&mut buffer).map_err(|_| Error{message: format!("Could not read {}", input)})?;
-            out.write_all(Lexer::lex(&buffer)?.as_bytes()).map_err(|_| Error{message: format!("Could not write to {}", output)})?;
+            f.read_to_string(&mut buffer).map_err(|_| Error {
+                message: format!("Could not read {}", input),
+            })?;
+            out.write_all(Lexer::lex(&buffer)?.as_bytes())
+                .map_err(|_| Error {
+                    message: format!("Could not write to {}", output),
+                })?;
             Ok(())
-        },
-        (Ok(_), _) => Err(Error { message: format!("Error opening file {}", output)}),
-        (_, Ok(_)) => Err(Error { message: format!("Error opening file {}", input)}),
-        (_, _) => Err(Error { message: format!("Error opening files: {}, {}", input, output)}),
+        }
+        (Ok(_), _) => Err(Error {
+            message: format!("Error opening file {}", output),
+        }),
+        (_, Ok(_)) => Err(Error {
+            message: format!("Error opening file {}", input),
+        }),
+        (_, _) => Err(Error {
+            message: format!("Error opening files: {}, {}", input, output),
+        }),
     }
 }
 
@@ -373,10 +381,13 @@ fn main() {
     let mut args = env::args();
     match args.len() {
         1 => {
-            println!("usage: {} <input file> <input file 2> ...", args.nth(0).unwrap());
+            println!(
+                "usage: {} <input file> <input file 2> ...",
+                args.nth(0).unwrap()
+            );
             println!("Markdown files will be converted to HTML");
             return;
-        },
+        }
         _ => {
             for v in args.skip(1) {
                 if v.contains(".md") {
@@ -390,7 +401,4 @@ fn main() {
             }
         }
     };
-
-
-    
 }
