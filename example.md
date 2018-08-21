@@ -1,5 +1,7 @@
 <head><link rel="stylesheet" type="text/css" href="style.css"></head>
 
+![Crates.io](https://img.shields.io/crates/v/deface.svg)
+
 # This is a first level header
 ## Second
 ### Third
@@ -37,12 +39,11 @@ like this
 {paragraph}This is a separate paragraph which has a [self-referential link](#paragraph)
 backticks escape what they contain `[`, as do backslashes "\\"
 
+`===` makes a horizontal rule  
+===
+
 *`*asterisks*`* make things *bold!*
 
 ~`~tilde's~`~ make things ~italic~
 
 `_underscores_` _underline_  
-
-`===` makes a horizontal rule  
-
-

@@ -122,6 +122,22 @@ impl<'a> Lexer<'a> {
                 }
             } else {
                 match c {
+                    '!' => {
+                        if let Some('[') = self.peek_char() {
+                            // Parse out link
+                            if let Some(linktext) = self.consume_while_char(|c| c != ']') {
+                                self.expect_char(']')?;
+                                self.expect_char('(')?;
+                                if let Some(target) = self.consume_while_char(|c| c != ')') {
+                                    self.expect_char(')')?;
+                                    out.push_str(&format!(
+                                        r#"<img src="{}" alt="{}">"#,
+                                        target, linktext
+                                    ));
+                                }
+                            }
+                        }
+                    },                    
                     '`' => {
                         escaped = !escaped;
                         if escaped {
@@ -395,7 +411,7 @@ fn main() {
                     let output = v.replace(".md", ".html");
                     match convert(&input, &output) {
                         Ok(_) => println!("Success: {} => {}", input, output),
-                        Err(e) => println!("Failure: {} => {}: {}", input, output, e.message),
+                        Err(e) => eprintln!("Failure: {} => {}: {}", input, output, e.message),
                     };
                 }
             }
