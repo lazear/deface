@@ -407,6 +407,17 @@ fn main() -> thread::Result<()> {
             );
             println!("Markdown files will be converted to HTML");
             return Ok(())
+        },
+        2 => {
+            for arg in args.skip(1) {
+                if arg.contains(".md") {
+                    let output: String = arg.replace(".md", ".html");
+                        match convert(&arg, &output) {
+                            Ok(_) => println!("Success: {} => {}", arg, output),
+                            Err(e) => eprintln!("Failure: {} => {}: {}", arg, output, e.message),
+                        };
+                }
+            }
         }
         n => {
             let (tx, rx) = myriad::mpmc::queue::<String>();

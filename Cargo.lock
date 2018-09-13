@@ -1,6 +1,6 @@
 [[package]]
 name = "deface"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "myriad 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
