@@ -1,8 +1,11 @@
+extern crate myriad;
+
 use std::env;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::iter::Peekable;
 use std::str;
+use std::thread;
 
 pub struct Lexer<'a> {
     remaining: Peekable<str::Lines<'a>>,
@@ -137,7 +140,7 @@ impl<'a> Lexer<'a> {
                                 }
                             }
                         }
-                    },                    
+                    }
                     '`' => {
                         escaped = !escaped;
                         if escaped {
@@ -393,8 +396,9 @@ fn convert(input: &str, output: &str) -> Result<(), Error> {
     }
 }
 
-fn main() {
+fn main() -> thread::Result<()> {
     let mut args = env::args();
+    let mut handles = Vec::new();
     match args.len() {
         1 => {
             println!(
@@ -402,19 +406,34 @@ fn main() {
                 args.nth(0).unwrap()
             );
             println!("Markdown files will be converted to HTML");
-            return;
+            return Ok(())
         }
-        _ => {
-            for v in args.skip(1) {
-                if v.contains(".md") {
-                    let input = v.clone();
-                    let output = v.replace(".md", ".html");
-                    match convert(&input, &output) {
-                        Ok(_) => println!("Success: {} => {}", input, output),
-                        Err(e) => eprintln!("Failure: {} => {}: {}", input, output, e.message),
-                    };
+        n => {
+            let (tx, rx) = myriad::mpmc::queue::<String>();
+            for _ in 0..n.max(4) {
+                let rx = rx.clone();
+                let h = thread::spawn(move || match rx.recv() {
+                    Ok(file) => {
+                        let output: String = file.replace(".md", ".html");
+                        match convert(&file, &output) {
+                            Ok(_) => println!("Success: {} => {}", file, output),
+                            Err(e) => eprintln!("Failure: {} => {}: {}", file, output, e.message),
+                        };
+                    }
+                    Err(_) => {}
+                });
+                handles.push(h);
+            }
+
+            for arg in args.skip(1) {
+                if arg.contains(".md") {
+                    tx.send(arg);
                 }
             }
         }
     };
+    handles
+        .into_iter()
+        .map(|h| h.join())
+        .collect::<thread::Result<()>>()
 }

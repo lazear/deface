@@ -1,4 +1,14 @@
 [[package]]
 name = "deface"
 version = "0.1.1"
+dependencies = [
+ "myriad 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
+[[package]]
+name = "myriad"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[metadata]
+"checksum myriad 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ebe00b1e439b45056e3834ca5658a4bb18b85b630ca6cbd9adb75ded642f453d"
